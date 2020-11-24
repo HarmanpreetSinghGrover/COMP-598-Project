@@ -34,7 +34,7 @@ def main():
             result.loc[j] = [name_, title_, coding_]
             j = j + 1
 
-    OUTPUT_FILE = f"../data/clean_test_data.tsv"
+    OUTPUT_FILE = f"../data/clean_data.tsv"
     result.to_csv(OUTPUT_FILE, index=False, sep="\t")
 
 if __name__ == '__main__':

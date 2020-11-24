@@ -7,7 +7,7 @@ import requests
         python3 collect_data.py ../data/data.json
 
     This script collects "iterations * num_posts" #posts from "/r/politics", "/r/conservative" and appends them to the file provided.
-    
+
     Output : 
         Appends "iterations * num_posts" #posts to ../data/data.json file
         Each line of "data.json" contains one post  
@@ -37,11 +37,11 @@ def collect(subreddit, iterations = 4, num_posts = 100):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('output_file', help= "File in which you wish to save!")
+    parser.add_argument('output_file', help= "File in which you wish to save(with path)!")
     args = parser.parse_args()
     subreddits = ["/r/politics", "/r/conservative"]
     for subreddit in subreddits:
-        iterations = 4
+        iterations = 3
         num_posts = 100
         result, total_posts = collect(subreddit, iterations, num_posts)
         with open(args.output_file, 'a') as sample1_file:
