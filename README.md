@@ -5,6 +5,8 @@ data/ : Contains the data
 
 scripts/ : Contains the scripts
 
+Main files for analysis : Tf-idf.ipynb, name_analysis.ipynb, func.py (contains functions that are called in the notebooks)
+
 Collected Data (data.json):
 
 1-800 posts:  21/Nov/2020
