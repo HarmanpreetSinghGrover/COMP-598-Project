@@ -10,6 +10,8 @@ from collections import Counter
 import math
 import nltk
 import json
+from nltk import ne_chunk, pos_tag, word_tokenize
+from nltk.tree import Tree
 
 
 def label_trump_biden(row):
@@ -65,46 +67,70 @@ def create_counts(topic_dict):
     for k, v in topic_dict.items():
         counter = Counter(v)
         topic_count[k] = {x[0]: x[1] for x in counter.most_common() if x[1] >= 5}
+#         topic_count[k] = {x[0]: x[1] for x in counter.most_common()}
     return topic_count
 
 
-def create_tfidf(all_posts, stop_words, topic_count, all_posts_no_stop_words=True, all_posts_no_trump_biden=False):
+
+def create_tfidf(all_posts_dict, topic_count):
     topic_tfidf = {}
-
-    N = 0
-    word_freq = {}
-    for idx, row in all_posts.iterrows():
-        title = row.title
-        topic = row.coding
-
-        title = re.sub(r"[()\[\],-.?!:;#&]", " ", title)
-        title = re.split(" ",title)
-        title = list(filter(lambda a: a != '', title))
         
-        if all_posts_no_trump_biden == True:
-            title = [word.lower() for word in title if word.isalpha() and word.lower() != 'donald' and word.lower() != 'trump' and word.lower() != 'biden' and word.lower() != 'joe']
-        else:
-            title = [word.lower() for word in title if word.isalpha()]
-        
-        if all_posts_no_stop_words==True:
-            title = [word for word in title if word not in stop_words]
-            
-        N += len(title)
-        for word in title:
-            if word not in word_freq.keys():
-                word_freq[word] = 1
-            else:
-                word_freq[word] += 1
-        
-
     for topic, words in topic_count.items():
         topic_tfidf[topic] = {}
         for word, freq in words.items():
             tf = topic_count[topic][word]
-            idf = math.log(N / word_freq[word])
+            
+            N_topics = len(all_posts_dict)
+            df = 0
+            for k, v in all_posts_dict.items():
+                if word in v.keys():
+                    df+=1
+            if df == 0:
+                continue
+            idf = math.log(N_topics/df)
+
             topic_tfidf[topic][word] = tf*idf
 
     return topic_tfidf
+
+
+# def create_tfidf(all_posts, stop_words, topic_count, all_posts_no_stop_words=True, all_posts_no_trump_biden=False):
+#     topic_tfidf = {}
+
+#     N = 0
+#     word_freq = {}
+#     for idx, row in all_posts.iterrows():
+#         title = row.title
+#         topic = row.coding
+
+#         title = re.sub(r"[()\[\],-.?!:;#&]", " ", title)
+#         title = re.split(" ",title)
+#         title = list(filter(lambda a: a != '', title))
+        
+#         if all_posts_no_trump_biden == True:
+#             title = [word.lower() for word in title if word.isalpha() and word.lower() != 'donald' and word.lower() != 'trump' and word.lower() != 'biden' and word.lower() != 'joe']
+#         else:
+#             title = [word.lower() for word in title if word.isalpha()]
+        
+#         if all_posts_no_stop_words==True:
+#             title = [word for word in title if word not in stop_words]
+            
+#         N += len(title)
+#         for word in title:
+#             if word not in word_freq.keys():
+#                 word_freq[word] = 1
+#             else:
+#                 word_freq[word] += 1
+        
+
+#     for topic, words in topic_count.items():
+#         topic_tfidf[topic] = {}
+#         for word, freq in words.items():
+#             tf = topic_count[topic][word]
+#             idf = math.log(N / word_freq[word])
+#             topic_tfidf[topic][word] = tf*idf
+
+#     return topic_tfidf
 
 def load_stop_words(stop_words):
     words = open("../data/stop_words.txt", "r").read().split("\n")
@@ -206,12 +232,13 @@ def plot_tfidf_dist(tfidf_dict):
     axes[3].axvline(statistics.median(list(tfidf_dict["I"].values())), linestyle='dashed')
     print("median of word frequency: ", statistics.median(list(tfidf_dict["I"].values())))
     
-def extract_entities(text):
+    
+def extract_entities(text,label):
     names = []
     for sent in nltk.sent_tokenize(text):
         for chunk in nltk.ne_chunk(nltk.pos_tag(nltk.word_tokenize(sent))):
             if hasattr(chunk, 'label'):
-                if chunk.label()=='PERSON':
+                if chunk.label()==label:
                     names += [' '.join(c[0] for c in chunk.leaves())]
     return names
 
@@ -219,7 +246,7 @@ def plot_pie_chart(dictionary, title):
     labels = dictionary.keys()
     sizes = [v/sum(dictionary.values()) for k,v in dictionary.items()]
 
-    plt.figure(2, figsize=(15, 15/1.6180))
+    plt.figure(2, figsize=(14, 14/1.6180))
     plt.pie(sizes, labels=labels, autopct='%1.1f%%',shadow=True, startangle=90)
     plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
     plt.title(title)
@@ -227,13 +254,13 @@ def plot_pie_chart(dictionary, title):
     plt.show()
     
     
-def plot_top_names(top_names):
+def plot_top_names(top_names, im_name):
     names = [w[0] for w in top_names]
     counts = [w[1] for w in top_names]
     x_pos = np.arange(len(names)) 
     
-    plt.figure(2, figsize=(15, 15/1.6180))
-    plt.subplot(title=f'Most mentioned names')
+    plt.figure(2, figsize=(14, 14/1.6180))
+    plt.subplot(title=f'Most mentioned {im_name}')
 #     sns.set_context("notebook", font_scale=1.25, rc={"lines.linewidth": 2.5})
     sns.barplot(x_pos, counts, palette='husl')
     plt.xticks(x_pos, names, rotation='vertical') 
@@ -329,8 +356,8 @@ def compute_corr(top_names3, df_cand, topic_oh, top_name_oh):
                 top_name_corr[top_name] += [np.corrcoef(topic_oh[topic], top_name_oh[top_name])[0][1]]
     return top_name_corr
 
-def plot_correlation(input_dict,im_name):
-    fig = plt.figure(figsize=(16,14))
+def plot_name_correlation(input_dict,im_name):
+    fig = plt.figure(figsize=(14,12))
     
     plt.subplot(421)
     tmp_dict1 = input_dict['Trump']
@@ -380,6 +407,37 @@ def plot_correlation(input_dict,im_name):
     plt.ylabel('Correlation Coefficient')
     plt.xlabel('Topic')
     plt.title("Chris Christie-Topic Correlation")
+       
+    plt.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.35,
+                    wspace=0.3)
+
+    fig.savefig(f'../data/output_imgs/{im_name}', format='png', dpi=300)
+    
+    
+def plot_location_correlation(input_dict,im_name):
+    fig = plt.figure(figsize=(14,12))
+    
+    plt.subplot(421)
+    tmp_dict1 = input_dict['Michigan']
+    plt.bar(tmp_dict1.index,tmp_dict1.values)
+    plt.ylabel('Correlation Coefficient')
+    plt.xlabel('Topic')
+    plt.title("Michigan-Topic Correlation")
+    
+    plt.subplot(422)
+    tmp_dict2 = input_dict['Pennsylvania']
+    plt.bar(tmp_dict2.index,tmp_dict2.values)
+    plt.ylabel('Correlation Coefficient')
+    plt.xlabel('Topic')
+    plt.title("Pennsylvania-Topic Correlation")
+    
+    plt.subplot(423)
+    tmp_dict3 = input_dict['Georgia']
+    plt.bar(tmp_dict3.index,tmp_dict3.values)
+    plt.ylabel('Correlation Coefficient')
+    plt.xlabel('Topic')
+    plt.title("Georgia-Topic Correlation")
+    
        
     plt.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.35,
                     wspace=0.3)
