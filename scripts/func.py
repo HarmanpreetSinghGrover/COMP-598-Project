@@ -141,50 +141,61 @@ def load_stop_words(stop_words):
 def plot_word_freq(input_dict,max_words,im_name):
     fig = plt.figure(figsize=(14,12))
     
-    plt.subplot(221)
     tmp_dict1 = input_dict['L']
     words_under_topic1 = len(tmp_dict1.keys()) if len(tmp_dict1.keys())<=max_words else max_words
+    tmp_dict2 = input_dict['N']
+    words_under_topic2 = len(tmp_dict2.keys()) if len(tmp_dict2.keys())<=max_words else max_words
+    tmp_dict3 = input_dict['S']
+    words_under_topic3 = len(tmp_dict3.keys()) if len(tmp_dict3.keys())<=max_words else max_words
+    tmp_dict4 = input_dict['I']
+    words_under_topic4 = len(tmp_dict4.keys()) if len(tmp_dict4.keys())<=max_words else max_words
+    ylim = max(sorted(tmp_dict1.values(),reverse=True)[:words_under_topic1]+
+                sorted(tmp_dict2.values(),reverse=True)[:words_under_topic2]+
+                sorted(tmp_dict3.values(),reverse=True)[:words_under_topic3]+
+                sorted(tmp_dict4.values(),reverse=True)[:words_under_topic4])
+
+    plt.subplot(221)
     y_pos1 = np.arange(words_under_topic1)
     plt.bar(y_pos1, sorted(tmp_dict1.values(),reverse=True)[:words_under_topic1], align='center', alpha=0.5)
     plt.xticks(y_pos1, [k1 for k1, v1 in sorted(tmp_dict1.items(), key=lambda item: item[1],reverse=True)[:words_under_topic1]],rotation=70)
     plt.ylabel('Tf-idf score')
     plt.xlabel('Top tokens')
+    plt.ylim(0,ylim)
     plt.title("Legitimate")
     
     plt.subplot(222)
-    tmp_dict2 = input_dict['N']
-    words_under_topic2 = len(tmp_dict2.keys()) if len(tmp_dict2.keys())<=max_words else max_words
     y_pos2 = np.arange(words_under_topic2)
     plt.bar(y_pos2, sorted(tmp_dict2.values(),reverse=True)[:words_under_topic2], align='center', alpha=0.5)
     plt.xticks(y_pos2, [k1 for k1, v1 in sorted(tmp_dict2.items(), key=lambda item: item[1],reverse=True)[:words_under_topic2]],rotation=70)
     plt.ylabel('Tf-idf score')
     plt.xlabel('Top tokens')
+    plt.ylim(0,ylim)
     plt.title('Not Legitimate')
     
     plt.subplot(223)
-    tmp_dict3 = input_dict['S']
-    words_under_topic3 = len(tmp_dict3.keys()) if len(tmp_dict3.keys())<=max_words else max_words
     y_pos3 = np.arange(words_under_topic3)
     plt.bar(y_pos3, sorted(tmp_dict3.values(),reverse=True)[:words_under_topic3], align='center', alpha=0.5)
     plt.xticks(y_pos3, [k1 for k1, v1 in sorted(tmp_dict3.items(), key=lambda item: item[1],reverse=True)[:words_under_topic3]],rotation=70)
     plt.ylabel('Tf-idf score')
     plt.xlabel('Top tokens')
+    plt.ylim(0,ylim)
     plt.title("Suspicious")
     
     plt.subplot(224)
-    tmp_dict4 = input_dict['I']
-    words_under_topic4 = len(tmp_dict4.keys()) if len(tmp_dict4.keys())<=max_words else max_words
     y_pos4 = np.arange(words_under_topic4)
     plt.bar(y_pos4, sorted(tmp_dict4.values(),reverse=True)[:words_under_topic4], align='center', alpha=0.5)
     plt.xticks(y_pos4, [k1 for k1, v1 in sorted(tmp_dict4.items(), key=lambda item: item[1],reverse=True)[:words_under_topic4]],rotation=70)
     plt.ylabel('Tf-idf score')
     plt.xlabel('Top tokens')
+    plt.ylim(0,ylim)
     plt.title("Irrelavant")
        
     plt.subplots_adjust(top=0.92, bottom=0.08, left=0.10, right=0.95, hspace=0.35,
                     wspace=0.3)
 
     fig.savefig(f'../data/output_imgs/{im_name}', format='png', dpi=300)
+
+
     
 def read_in(file_name):
     with open(file_name,'r') as f:
@@ -246,12 +257,15 @@ def plot_pie_chart(dictionary, title):
     labels = dictionary.keys()
     sizes = [v/sum(dictionary.values()) for k,v in dictionary.items()]
 
-    plt.figure(2, figsize=(14, 14/1.6180))
+    fig = plt.figure(2, figsize=(14, 14/1.6180))
     plt.pie(sizes, labels=labels, autopct='%1.1f%%',shadow=True, startangle=90)
     plt.axis('equal')  # Equal aspect ratio ensures that pie is drawn as a circle.
     plt.title(title)
-
-    plt.show()
+    words = title.split()
+    words = [word.lower() for word in words]
+    title = '_'.join(words)
+    fig.savefig(f'../data/output_imgs/{title}.png', format='png', dpi=300)
+#     plt.show()
     
     
 def plot_top_names(top_names, im_name):
